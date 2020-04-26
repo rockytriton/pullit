@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <unistd.h>
+#include <libxml/parser.h>
 #include <libxml/tree.h>
 #include <sys/stat.h>
 
@@ -17,7 +18,6 @@ PackageRepo::PackageRepo() {
 }
 
 PackageRepo::~PackageRepo() {
-    cout << "PackageRepo: Cleaning up.";
     xmlCleanupParser();
 }
 
@@ -31,6 +31,8 @@ void PackageRepo::update() {
 }
 
 void PackageRepo::load() {
+    xmlDoc *doc = NULL;
+    xmlNode *root_element = NULL;
 
     doc = xmlReadFile("/usr/share/pullit/installed.xml", NULL, 0);
     load_installed(xmlDocGetRootElement(doc));
@@ -45,7 +47,8 @@ void PackageRepo::load() {
 
 }
 
-void PackageRepo::load_installed(xmlNode *a_node) {
+void PackageRepo::load_installed(void *node) {
+    xmlNode *a_node = (xmlNode *)node;
     xmlNode *curPck = nullptr;
 
     for (curPck = a_node->children; curPck; curPck = curPck->next) {
@@ -77,13 +80,13 @@ void PackageRepo::load_installed(xmlNode *a_node) {
             }
 
             if (CMD_VALIDATE() && pck->file == "") 
-                count << "installed.xml: Invalid pck, missing file attribute" << endl;
+                cout << "installed.xml: Invalid pck, missing file attribute" << endl;
 
             if (CMD_VALIDATE() && pck->name == "") 
-                count << "installed.xml: Invalid pck, missing name attribute" << endl;
+                cout << "installed.xml: Invalid pck, missing name attribute" << endl;
 
             if (CMD_VALIDATE() && pck->version == "") 
-                count << "installed.xml: Invalid pck, missing version attribute" << endl;
+                cout << "installed.xml: Invalid pck, missing version attribute" << endl;
 
             if (CMD_LIST_INSTALLED())
                 cout << "Installed: " << pck->name << " - " << pck->version << " - " << pck->file << endl;
@@ -93,8 +96,9 @@ void PackageRepo::load_installed(xmlNode *a_node) {
     }
 }
 
-void PackageRepo::build_map(xmlNode * a_node)
+void PackageRepo::build_map(void* node)
 {
+    xmlNode * a_node = (xmlNode *)node;
     xmlNode *curPck = nullptr;
 
     for (curPck = a_node->children; curPck; curPck = curPck->next) {
@@ -126,13 +130,13 @@ void PackageRepo::build_map(xmlNode * a_node)
             }
 
             if (CMD_VALIDATE() && pck->file == "") 
-                count << "packages.xml: Invalid pck, missing file attribute" << endl;
+                cout << "packages.xml: Invalid pck, missing file attribute" << endl;
 
             if (CMD_VALIDATE() && pck->name == "") 
-                count << "packages.xml: Invalid pck, missing name attribute" << endl;
+                cout << "packages.xml: Invalid pck, missing name attribute" << endl;
 
             if (CMD_VALIDATE() && pck->version == "") 
-                count << "packages.xml: Invalid pck, missing version attribute" << endl;
+                cout << "packages.xml: Invalid pck, missing version attribute" << endl;
 
             packageMap[pck->name] = pck;
 
@@ -167,7 +171,7 @@ void PackageRepo::build_map(xmlNode * a_node)
 
                 if (it == packageMap.end()) {
                     if (CMD_VALIDATE()) {
-                        count << "packages.xml: Invalid pck " << pck->name << ", missing dependency " << depName << endl;
+                        cout << "packages.xml: Invalid pck " << pck->name << ", missing dependency " << depName << endl;
                     } else {
                         std::cerr << "PACKAGE NOT FOUND: '" << depName << "'" << endl;
                         exit(-1);
@@ -175,7 +179,7 @@ void PackageRepo::build_map(xmlNode * a_node)
                 }
 
                 if (CMD_VALIDATE() && (*it).second->version != depVersion) {
-                    count << "packages.xml: Invalid pck " << pck->name << ", dependency version mismatch " << depName << endl;
+                    cout << "packages.xml: Invalid pck " << pck->name << ", dependency version mismatch " << depName << endl;
                 }
 
                 shared_ptr<Package> dep = packageMap[depName];
@@ -202,7 +206,7 @@ void PackageRepo::install_package(shared_ptr<Package> pck) {
     if (!pck->dependencies.empty()) {
         for (int i=0; i<pck->dependencies.size(); i++) {
             cout << "Found dependency '" << pck->dependencies[i]->name << "' for '" << pck->name << "'" << endl;
-            installPackage(pck->dependencies[i]);
+            install_package(pck->dependencies[i]);
         }
     }
 
@@ -286,6 +290,25 @@ void PackageRepo::extract_file(shared_ptr<Package> pck) {
     cout << "Package '" << pck->name << "' installation complete." << endl << endl;
 
     installedPackages[pck->name] = pck;
+}
+
+void PackageRepo::store_package_info(shared_ptr<Package> pck) {
+    xmlDoc *doc = xmlParseFile("/usr/share/pullit/installed.xml");
+    xmlNode *root = xmlDocGetRootElement(doc);
+
+    xmlNodePtr pNode = xmlNewNode(0, (xmlChar*)"pck");
+
+    xmlIndentTreeOutput = 1;
+
+	xmlAttrPtr newattr = xmlNewProp (pNode, (const xmlChar *)"name", (const xmlChar *)pck->name.c_str());
+    xmlNewProp (pNode, (const xmlChar *)"version", (const xmlChar *)pck->version.c_str());
+
+    xmlAddChild(root, pNode);
+    xmlDocSetRootElement(doc, root);
+
+    xmlSaveFormatFile ("/usr/share/pullit/installed.xml", doc, 1);
+    
+    xmlFreeDoc(doc);
 }
 
 };

@@ -1,8 +1,6 @@
 #pragma once
 #include "common.h"
 
-#include <libxml/parser.h>
-
 namespace pullit {
 
 class PackageRepo {
@@ -17,12 +15,15 @@ public:
     void install_packages();
 
 protected:
-    void load_installed(xmlNode *a_node);
+    PackageRepo();
+
+    void load_installed(void *node);
+    void build_map(void* node);
+    void store_package_info(shared_ptr<Package> pck);
+    void extract_file(shared_ptr<Package> pck);
+    void install_package(shared_ptr<Package> pck);
 
 private:
-    xmlDoc *doc = NULL;
-    xmlNode *root_element = NULL;
-
     map<string, shared_ptr<Package>> packageMap;
     map<string, shared_ptr<Package>> installedPackages;
 

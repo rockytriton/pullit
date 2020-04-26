@@ -8,7 +8,6 @@ Retriever::Retriever() {
 }
 
 Retriever::~Retriever() {
-    cout << "Retriever: Cleaning up.";
     curl_global_cleanup();
 }
 
