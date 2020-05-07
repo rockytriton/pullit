@@ -32,6 +32,8 @@ int main(int argc, char **argv) {
     PackageRepo::inst().update();
     cout << "Updated." << endl;
     
+    PackageRepo::inst().load();
+
     if (CMD_INSTALL()) {
         PackageRepo::inst().install_packages();
     } else if (CMD_VALIDATE()) {

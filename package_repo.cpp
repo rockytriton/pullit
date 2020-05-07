@@ -51,6 +51,10 @@ void PackageRepo::load_installed(void *node) {
     xmlNode *a_node = (xmlNode *)node;
     xmlNode *curPck = nullptr;
 
+    if (CMD_LIST_INSTALLED()) {
+        cout << endl << "Installed Packages: " << endl;
+    }
+
     for (curPck = a_node->children; curPck; curPck = curPck->next) {
 
         if (curPck->type == XML_ELEMENT_NODE) {
@@ -79,8 +83,12 @@ void PackageRepo::load_installed(void *node) {
                 }
             }
 
-            if (CMD_VALIDATE() && pck->file == "") 
-                cout << "installed.xml: Invalid pck, missing file attribute" << endl;
+            if (CMD_LIST_INSTALLED()) {
+                cout << "\t" << pck->name << " " << pck->version << endl;   
+            }
+
+            //if (CMD_VALIDATE() && pck->file == "") 
+            //    cout << "installed.xml: Invalid pck, missing file attribute" << endl;
 
             if (CMD_VALIDATE() && pck->name == "") 
                 cout << "installed.xml: Invalid pck, missing name attribute" << endl;
@@ -130,13 +138,13 @@ void PackageRepo::build_map(void* node)
             }
 
             if (CMD_VALIDATE() && pck->file == "") 
-                cout << "packages.xml: Invalid pck, missing file attribute" << endl;
+                cout << "packages.xml: Invalid pck " << pck->name << ", missing file attribute" << endl;
 
             if (CMD_VALIDATE() && pck->name == "") 
-                cout << "packages.xml: Invalid pck, missing name attribute" << endl;
+                cout << "packages.xml: Invalid pck " << pck->name << ", missing name attribute" << endl;
 
             if (CMD_VALIDATE() && pck->version == "") 
-                cout << "packages.xml: Invalid pck, missing version attribute" << endl;
+                cout << "packages.xml: Invalid pck " << pck->name << ", missing version attribute" << endl;
 
             packageMap[pck->name] = pck;
 
@@ -191,7 +199,12 @@ void PackageRepo::build_map(void* node)
 
 void PackageRepo::install_packages() {
     for (size_t i = 0; i < g_options.packages.size(); i++) {
-        install_package(installedPackages[g_options.packages[i]]);
+        string pckName = g_options.packages[i];
+        cout << "Preparing to install package " << pckName << endl;
+        shared_ptr<Package> pck = packageMap[pckName];
+        cout << "Found version " << pck->version << endl;
+
+        install_package(pck);
     }
 }
 
@@ -208,6 +221,11 @@ void PackageRepo::install_package(shared_ptr<Package> pck) {
             cout << "Found dependency '" << pck->dependencies[i]->name << "' for '" << pck->name << "'" << endl;
             install_package(pck->dependencies[i]);
         }
+    }
+
+    if (pck->file == "") {
+	    cout << "Installed package " << pck->name << endl;
+	    return;
     }
 
     cout << "Installing '" << pck->name << "'..." << endl;
