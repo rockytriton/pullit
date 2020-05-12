@@ -5,6 +5,7 @@
 #include <libxml/parser.h>
 #include <libxml/tree.h>
 #include <sys/stat.h>
+#include <filesystem>
 
 #include "download.h"
 
@@ -109,6 +110,10 @@ void PackageRepo::build_map(void* node)
     xmlNode * a_node = (xmlNode *)node;
     xmlNode *curPck = nullptr;
 
+    if (CMD_LIST_MISSING()) {
+        cout << endl << "Missing Packages: " << endl;
+    }
+
     for (curPck = a_node->children; curPck; curPck = curPck->next) {
 
         if (curPck->type == XML_ELEMENT_NODE) {
@@ -148,6 +153,11 @@ void PackageRepo::build_map(void* node)
 
             packageMap[pck->name] = pck;
 
+            if (CMD_LIST_MISSING() && installedPackages.find(pck->name) == installedPackages.end()) {
+                cout << "\t" << pck->name << " " << pck->version << endl;
+                continue;
+            }
+
             xmlNode *deps = nullptr;
 
             for (deps = curPck->children; deps; deps = deps->next) {
@@ -181,7 +191,7 @@ void PackageRepo::build_map(void* node)
                     if (CMD_VALIDATE()) {
                         cout << "packages.xml: Invalid pck " << pck->name << ", missing dependency " << depName << endl;
                     } else {
-                        std::cerr << "PACKAGE NOT FOUND: '" << depName << "'" << endl;
+                        std::cerr << "DEPENDENCY PACKAGE NOT FOUND: '" << depName << "' of " << pck->name << endl;
                         exit(-1);
                     }
                 }
@@ -235,6 +245,19 @@ void PackageRepo::install_package(shared_ptr<Package> pck) {
     store_package_info(pck);
 }
 
+void checkFail(int sys, string msg) {
+    if (sys) {
+        cout << msg << " Continue (y,N)? ";
+
+        string resp;
+        std::getline(std::cin, resp);
+
+        if (resp != "y") {
+            exit(1);
+        }
+    }
+}
+
 void PackageRepo::extract_file(shared_ptr<Package> pck) {
     string outPath = string("/tmp/pullit/") + pck->file;
     mkdir("/tmp/pullit", S_IRUSR | S_IWUSR | S_IXUSR);
@@ -270,7 +293,7 @@ void PackageRepo::extract_file(shared_ptr<Package> pck) {
     }
 
     bool installer = false;
-
+    bool filesToCopy = false;
     bool preInstaller = false;
 
     if(access(string(outPath + "/_install/preinstall.sh").c_str(), F_OK ) != -1 ) {
@@ -290,16 +313,49 @@ void PackageRepo::extract_file(shared_ptr<Package> pck) {
 
     if (preInstaller) {
         cout << "Running pre-installer" << endl;
-        system("cd /tmp/pullit/_install && /bin/bash /tmp/pullit/_install/preinstall.sh");
+        
+        checkFail(system("/bin/bash -c 'cd /tmp/pullit/_install && bash /tmp/pullit/_install/preinstall.sh'"), "FAILING INVOKING PRE-INSTALLER!");
     }
 
     cout << "Copying files..." << endl;
-    system(string("cp -r " + outPath + "/* /").c_str());
+
+    std::filesystem::copy(outPath, "/", std::filesystem::copy_options::recursive | 
+        std::filesystem::copy_options::overwrite_existing); // | std::filesystem::copy_options::copy_symlinks);
+/*
+    if(access(string(outPath + "/opt/qt5").c_str(), F_OK ) != -1 ) {
+        //special handling for qt5...
+        cout << "Copying Qt5 files..." << endl;
+        checkFail(system(string("cp -r " + outPath + "/opt/qt5/* /opt/qt5/").c_str()), "FAILING COPYING Qt5 FILES!");
+        checkFail(system(string("rm -rf " + outPath + "/opt/qt5").c_str()), "FAILING CLEANING Qt5 FILES!");
+    }
+
+    if(access(string(outPath + "/var/run").c_str(), F_OK ) != -1 ) {
+        //special handling for /var/run...
+        cout << "Copying /var/run files..." << endl;
+        checkFail(system(string("cp -r " + outPath + "/var/run/* /var/run/").c_str()), "FAILING COPYING /var/run FILES!");
+        checkFail(system(string("rm -rf " + outPath + "/var/run").c_str()), "FAILING CLEANING /var/run FILES!");
+    }
+
+    if(access(string(outPath + "/opt/kf5").c_str(), F_OK ) != -1 ) {
+        //special handling for kf5...
+        cout << "Copying kf5 files..." << endl;
+        checkFail(system(string("cp -r " + outPath + "/opt/kf5/* /opt/kf5/").c_str()), "FAILING COPYING kf5 FILES!");
+        checkFail(system(string("rm -rf " + outPath + "/opt/kf5").c_str()), "FAILING CLEANING kf5 FILES!");
+    }
+
+    if (!system(string("ls -ls " + outPath + "/*").c_str())) {
+        filesToCopy = true;
+        checkFail(system(string("cp -r " + outPath + "/* /").c_str()), "FAILED COPYING FILES!");
+    }
+    */
 
     if (installer) {
         cout << "Running installer..." << endl;
-        system("cd /tmp/pullit/_install && /bin/bash /tmp/pullit/_install/install.sh");
+        
+        checkFail(system("/bin/bash -c 'cd /tmp/pullit/_install && bash /tmp/pullit/_install/install.sh'"), "FAILING INVOKING INSTALLER!");
     }
+
+    //checkFail((!installer && !preInstaller && !filesToCopy) ? 1 : 0, "This package had nothing to be done!");
 
     cout << "Cleaning up files..." << endl;
     system("rm -rf /tmp/pullit/_install 2> /dev/null");

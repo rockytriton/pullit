@@ -34,5 +34,6 @@ extern Options g_options;
 #define CMD_UNINSTALL() (g_options.command == "uninstall")
 #define CMD_LIST_INSTALLED() (g_options.command == "list_installed")
 #define CMD_LIST_ALL() (g_options.command == "list_all")
+#define CMD_LIST_MISSING() (g_options.command == "list_missing")
 
 #define STR_EQ(a, b) (string((const char *)a) == string((const char *)b))

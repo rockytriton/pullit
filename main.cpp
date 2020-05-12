@@ -34,10 +34,13 @@ int main(int argc, char **argv) {
     
     PackageRepo::inst().load();
 
+
     if (CMD_INSTALL()) {
         PackageRepo::inst().install_packages();
     } else if (CMD_VALIDATE()) {
         cout << endl << "Validation Complete" << endl;
+    } else if (CMD_LIST_MISSING()) {
+        
     }
 }
 
