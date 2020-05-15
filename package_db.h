@@ -23,6 +23,8 @@ public:
     bool installPackage(Package &pck);
 
     bool isPackageInstalled(Package &pck);
+
+    string getPackagesPath();
     
 protected:
     PackageDb();

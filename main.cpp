@@ -106,7 +106,7 @@ int main(int argc, char **argv) {
 }
 
 bool parsePackage(string pckString, Package &pck) {
-    vector<string> tokens = split(arg, ',');
+    vector<string> tokens = split(pckString, ',');
 
     pck.name = tokens[0];
     pck.version = tokens.size() > 1 ? tokens[1] : "";

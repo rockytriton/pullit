@@ -1,4 +1,5 @@
 #include "package_db.h"
+#include "package_installer.h"
 
 #include <sqlite3.h>
 #include <unistd.h>
@@ -115,7 +116,7 @@ bool PackageDb::installPackage(Package &pck) {
         }
     }
 
-    return false;
+    return PackageInstaller::inst().install(pck);
 }
 
 vector<Package> PackageDb::listInstalled(Package &pck) {
@@ -184,6 +185,27 @@ bool PackageDb::findPackage(Package &pck, bool showNotFoundMsg) {
     pck.file = rows[0]["file"];
 
     return true;
+}
+
+string PackageDb::getPackagesPath() {
+    vector<std::map<string, string>> rows;
+
+    sqlite3_exec(DB, string("select * from config where key = 'packages_path'").c_str(), 
+            PackageDb::fetchCallback, &rows, NULL);
+
+    if (rows.empty()) {
+        cout << "No DB Configuration" << endl;
+        return "";
+    }
+
+    string path = rows[0]["value"];
+
+    if (!std::filesystem::is_directory(path)) {
+        cout << "Invalid DB Configuration" << endl;
+        return "";
+    }
+
+    return path;
 }
 
 bool PackageDb::packageFileExists(const string &file) {
