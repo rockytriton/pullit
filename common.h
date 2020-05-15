@@ -16,6 +16,7 @@ using std::shared_ptr;
 using std::cerr;
 
 struct Package {
+    string id;
     string name;
     string file;
     string version;
@@ -35,5 +36,9 @@ extern Options g_options;
 #define CMD_LIST_INSTALLED() (g_options.command == "list_installed")
 #define CMD_LIST_ALL() (g_options.command == "list_all")
 #define CMD_LIST_MISSING() (g_options.command == "list_missing")
+#define CMD_INSTALL_MANUAL() (g_options.command == "install_manual")
+#define CMD_ADD_PACKAGE() (g_options.command == "add")
 
 #define STR_EQ(a, b) (string((const char *)a) == string((const char *)b))
+
+std::vector<std::string> split(const std::string &s, char delim);

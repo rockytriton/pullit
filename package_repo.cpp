@@ -88,9 +88,6 @@ void PackageRepo::load_installed(void *node) {
                 cout << "\t" << pck->name << " " << pck->version << endl;   
             }
 
-            //if (CMD_VALIDATE() && pck->file == "") 
-            //    cout << "installed.xml: Invalid pck, missing file attribute" << endl;
-
             if (CMD_VALIDATE() && pck->name == "") 
                 cout << "installed.xml: Invalid pck, missing name attribute" << endl;
 
