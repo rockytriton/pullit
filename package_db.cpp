@@ -59,6 +59,95 @@ bool PackageDb::dbInsert(string query) {
     return true;
 }
 
+bool PackageDb::isPackageInstalled(Package &pck) {
+    vector<Package> installed = listInstalled(pck);
+
+    if (!installed.empty()) {
+        return false;
+    }
+
+    return true;
+}
+
+bool PackageDb::markInstalled(Package &pck) {
+    if (!findPackage(pck, false)) {
+        cout << "Package does not exist: " << pck.name << " " << pck.version << endl;
+        return false;
+    }
+
+    vector<Package> installed = listInstalled(pck);
+
+    if (!installed.empty()) {
+        cout << "Package is already installed: " << pck.name << " " << pck.version << endl;
+        return false;
+    }
+
+    int rc = sqlite3_exec(DB, string("insert into installed values(" + pck.id + ", '" + 
+            pck.name + "', '" + pck.version + "')").c_str(), PackageDb::fetchCallback, NULL, NULL);
+
+    if (rc != SQLITE_OK) {
+        cout << "Failed to add installed: " << rc << endl;
+        return false;
+    }
+
+    cout << "Package marked as installed: " << pck.name << " " << pck.version << endl; 
+
+    return true;
+}
+
+bool PackageDb::installPackage(Package &pck) {
+
+    if (isPackageInstalled(pck)) {
+        cout << "Package already installed: " << pck.name << " " << pck.version << endl;
+        return true;
+    }
+
+    cout << "Installing package: " << pck.name << " " << pck.version << "..." << endl;
+
+    vector<Package> deps = listDependencies(pck);
+
+    for (auto &p : deps) {
+        if (!isPackageInstalled(p)) {
+            cout << "Installing dependency " << p.name << " " << p.version << "..." << endl;
+            if (!installPackage(p)) {
+                return false;
+            }
+        }
+    }
+
+    return false;
+}
+
+vector<Package> PackageDb::listInstalled(Package &pck) {
+    vector<Package> packages;
+    vector<std::map<string, string>> rows;
+
+    string query = "select * from installed";
+
+    if (pck.name != "") {
+        query += " where name = '" + pck.name + "'";
+
+        if (pck.version != "") {
+            query += " and version = '" + pck.version + "'";
+        }
+    }
+
+    sqlite3_exec(DB, string(query).c_str(), 
+            PackageDb::fetchCallback, &rows, NULL);
+
+    for (uint32_t i=0; i<rows.size(); i++) {
+        Package pck;
+
+        pck.id = rows[i]["id"];
+        pck.name = rows[i]["name"];
+        pck.version = rows[i]["version"];
+
+        packages.push_back(pck);
+    }
+
+    return packages;
+}
+
 bool PackageDb::findPackage(Package &pck, bool showNotFoundMsg) {
     vector<std::map<string, string>> rows;
     int rc = 0;
@@ -168,8 +257,29 @@ bool PackageDb::insertPackage(Package pck, vector<Package> &deps) {
     return !failed;
 }
 
-vector<Package> PackageDb::listDependencies(Package pck) {
+vector<Package> PackageDb::listDependencies(Package &pck) {
     vector<Package> pcks;
+
+    if (!findPackage(pck)) {
+        cout << "Invalid Package: " << pck.name << " " << pck.version << endl;
+        return pcks;
+    }
+
+    vector<std::map<string, string>> rows;
+
+    sqlite3_exec(DB, string("select * from dependencies where pck_id = " + pck.id).c_str(), 
+            PackageDb::fetchCallback, &rows, NULL);
+
+    for (uint32_t i=0; i<rows.size(); i++) {
+        Package pck;
+
+        pck.id = rows[i]["id"];
+        pck.name = rows[i]["name"];
+        pck.version = rows[i]["version"];
+        pck.file = rows[i]["file"];
+
+        pcks.push_back(pck);
+    }
 
     return pcks;
 }

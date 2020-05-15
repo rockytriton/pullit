@@ -317,7 +317,9 @@ void PackageRepo::extract_file(shared_ptr<Package> pck) {
     cout << "Copying files..." << endl;
 
     std::filesystem::copy(outPath, "/", std::filesystem::copy_options::recursive | 
-        std::filesystem::copy_options::overwrite_existing); // | std::filesystem::copy_options::copy_symlinks);
+        std::filesystem::copy_options::overwrite_existing);
+        
+         // | std::filesystem::copy_options::copy_symlinks);
 /*
     if(access(string(outPath + "/opt/qt5").c_str(), F_OK ) != -1 ) {
         //special handling for qt5...

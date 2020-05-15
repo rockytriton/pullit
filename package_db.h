@@ -9,12 +9,20 @@ public:
 
     bool insertPackage(Package pck, vector<Package> &deps);
 
-    vector<Package> listDependencies(Package pck);
+    vector<Package> listDependencies(Package &pck);
 
     bool findPackage(Package &pck, bool showNotFoundMsg = true);
 
     bool validate();
     bool packageFileExists(const string &file);
+
+    vector<Package> listInstalled(Package &pck);
+
+    bool markInstalled(Package &pck);
+
+    bool installPackage(Package &pck);
+
+    bool isPackageInstalled(Package &pck);
     
 protected:
     PackageDb();

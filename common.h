@@ -32,6 +32,7 @@ extern Options g_options;
 
 #define CMD_VALIDATE() (g_options.command == "validate")
 #define CMD_INSTALL() (g_options.command == "install")
+#define CMD_MARK_INST() (g_options.command == "mark_inst")
 #define CMD_UNINSTALL() (g_options.command == "uninstall")
 #define CMD_LIST_INSTALLED() (g_options.command == "list_installed")
 #define CMD_LIST_ALL() (g_options.command == "list_all")
