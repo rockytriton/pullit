@@ -103,6 +103,8 @@ bool PackageInstaller::extract(string &file) {
 
     string path = tempPath + "tmp.tar.gz";
 
+    std::filesystem::remove(path);
+
     if (PackageDb::inst().packageFileExists(file)) {
         std::filesystem::copy(PackageDb::inst().getPackagesPath() + "/" + file, path, 
                 std::filesystem::copy_options::overwrite_existing);
