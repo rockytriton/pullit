@@ -63,7 +63,7 @@ bool PackageDb::dbInsert(string query) {
 bool PackageDb::isPackageInstalled(Package &pck) {
     vector<Package> installed = listInstalled(pck);
 
-    if (!installed.empty()) {
+    if (installed.empty()) {
         return false;
     }
 
