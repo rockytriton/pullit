@@ -55,11 +55,12 @@ bool PackageInstaller::install(Package &pck) {
     }
 
     if (std::filesystem::exists(string(outPath + "/_install/install.sh"))) {
-        preInstaller = true;
+        installer = true;
     }
 
     if(std::filesystem::exists(string(outPath + "/_install"))) {
         std::filesystem::rename(outPath + "/_install", tempPath + "_install");
+        cout << "Renamed: " << tempPath << "_install" << endl;
     }
 
     if (preInstaller) {
@@ -72,7 +73,7 @@ bool PackageInstaller::install(Package &pck) {
         }
     }
 
-    cout << "Copying files..." << endl;
+    cout << "Copying files: " << outPath << endl;
 
     std::filesystem::copy(outPath, "/", std::filesystem::copy_options::recursive | 
         std::filesystem::copy_options::overwrite_existing);
