@@ -107,6 +107,8 @@ bool PackageDb::installPackage(Package &pck) {
 
     vector<Package> deps = listDependencies(pck);
 
+    cout << "Found " << deps.size() << " dependencies..." << endl;
+
     for (auto &p : deps) {
         if (!isPackageInstalled(p)) {
             cout << "Installing dependency " << p.name << " " << p.version << "..." << endl;
@@ -116,7 +118,12 @@ bool PackageDb::installPackage(Package &pck) {
         }
     }
 
-    return PackageInstaller::inst().install(pck);
+    if (PackageInstaller::inst().install(pck)) {
+        markInstalled(pck);
+        return true;
+    }
+
+    return false;
 }
 
 vector<Package> PackageDb::listInstalled(Package &pck) {
@@ -149,15 +156,24 @@ vector<Package> PackageDb::listInstalled(Package &pck) {
     return packages;
 }
 
+bool PackageDb::findPackage(string id, Package &pck) {
+    pck.id = id;
+
+    return findPackage(pck, true);
+}
+
 bool PackageDb::findPackage(Package &pck, bool showNotFoundMsg) {
     vector<std::map<string, string>> rows;
     int rc = 0;
     char *msg = 0;
 
-    if (pck.version == "")
+    if (pck.id != "") {
+        rc = sqlite3_exec(DB, string("select * from packages where id = " + pck.id + "").c_str(), 
+            PackageDb::fetchCallback, &rows, &msg);
+    } else if (pck.version == "") {
         rc = sqlite3_exec(DB, string("select * from packages where name = '" + pck.name + "'").c_str(), 
             PackageDb::fetchCallback, &rows, &msg);
-    else 
+    } else 
         rc = sqlite3_exec(DB, string("select * from packages where name = '" + pck.name + "' and version = '" + pck.version + "'").c_str(), 
             PackageDb::fetchCallback, &rows, &msg);
 
@@ -293,14 +309,14 @@ vector<Package> PackageDb::listDependencies(Package &pck) {
             PackageDb::fetchCallback, &rows, NULL);
 
     for (uint32_t i=0; i<rows.size(); i++) {
-        Package pck;
+        Package p;
 
-        pck.id = rows[i]["id"];
-        pck.name = rows[i]["name"];
-        pck.version = rows[i]["version"];
-        pck.file = rows[i]["file"];
+        if (!findPackage(rows[i]["dep_id"], p)) {
+            cerr << "FAILURE: DEPENDENCY NOT FOUND: " << rows[i]["dep_id"] << endl;
+            exit(-2);
+        }
 
-        pcks.push_back(pck);
+        pcks.push_back(p);
     }
 
     return pcks;

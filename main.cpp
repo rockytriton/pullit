@@ -87,7 +87,7 @@ int main(int argc, char **argv) {
 
         return success ? 0 : -1;
     }
-
+/*
     cout << "Updating..." << endl;
     PackageRepo::inst().update();
     cout << "Updated." << endl;
@@ -103,6 +103,7 @@ int main(int argc, char **argv) {
     } else if (CMD_INSTALL_MANUAL()) {
 
     }
+    */
 }
 
 bool parsePackage(string pckString, Package &pck) {

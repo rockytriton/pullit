@@ -13,6 +13,8 @@ public:
 
     bool findPackage(Package &pck, bool showNotFoundMsg = true);
 
+    bool findPackage(string id, Package &p);
+
     bool validate();
     bool packageFileExists(const string &file);
 

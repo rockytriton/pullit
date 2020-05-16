@@ -9,6 +9,8 @@
 
 #include <sstream>
 
+namespace fs = std::filesystem;
+
 namespace pullit {
 
 PackageInstaller::PackageInstaller() {
@@ -39,6 +41,15 @@ bool checkFailure(int sys, string msg) {
     return true;
 }
 
+void copyFiles(string from, string to) {
+    for(auto& p: fs::directory_iterator("sandbox")) {
+        if (p.is_directory()) {
+            
+        }
+    }
+        //std::cout << p.path() << '\n';
+}
+
 bool PackageInstaller::install(Package &pck) {
     string outPath = tempPath + pck.file;
     
@@ -59,7 +70,11 @@ bool PackageInstaller::install(Package &pck) {
     }
 
     if(std::filesystem::exists(string(outPath + "/_install"))) {
-        std::filesystem::rename(outPath + "/_install", tempPath + "_install");
+        if (!checkFailure(system(string(
+                "mv " + outPath + "/_install " + tempPath + "_install").c_str()), "FAILED MOVING FILES")) {
+            return false;
+        }
+
         cout << "Renamed: " << tempPath << "_install" << endl;
     }
 
@@ -124,6 +139,17 @@ bool PackageInstaller::extract(string &file) {
 
     if (access(outPath.c_str(), F_OK ) == -1) {
         cerr << "Failed to create extraction directory: " << outPath << endl;
+        return false;
+    }
+
+    string tarCommand = "tar -xf /tmp/pullit/tmp.tar.gz ";
+    tarCommand += "-C ";
+    tarCommand += outPath;
+
+    cout << "Extracting " << file << " ..." << endl;
+    
+    if (system(tarCommand.c_str())) {
+        cerr << "Error extracting tar." << endl;
         return false;
     }
 
