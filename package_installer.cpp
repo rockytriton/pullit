@@ -42,12 +42,22 @@ bool checkFailure(int sys, string msg) {
 }
 
 void copyFiles(string from, string to) {
-    for(auto& p: fs::directory_iterator("sandbox")) {
+    for(auto& p: fs::directory_iterator(from)) {
+        auto fromFile = from + "/" + p.path().filename();
+        auto toFile = to + "/" + p.path().filename();
+
         if (p.is_directory()) {
-            
+
+            if (p.is_symlink()) {
+                cout << "IS_SYM_LINK_DIR: " << fromFile << endl;
+            }
+
+            copyFiles(fromFile, toFile);
+        } else {
+            cout << "Copying file: " << fromFile << " to " << toFile << endl;
+            fs::copy(fromFile, toFile);
         }
     }
-        //std::cout << p.path() << '\n';
 }
 
 bool PackageInstaller::install(Package &pck) {
@@ -90,8 +100,10 @@ bool PackageInstaller::install(Package &pck) {
 
     cout << "Copying files: " << outPath << endl;
 
-    std::filesystem::copy(outPath, "/", std::filesystem::copy_options::recursive | 
-        std::filesystem::copy_options::overwrite_existing);
+    copyFiles(outPath, "/");
+
+    //std::filesystem::copy(outPath, "/", std::filesystem::copy_options::recursive | 
+    //    std::filesystem::copy_options::overwrite_existing);
 
     if (installer) {
         cout << "Running installer" << endl;
