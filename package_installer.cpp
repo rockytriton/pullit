@@ -7,6 +7,8 @@
 #include <sys/stat.h>
 #include <filesystem>
 
+#include <cerrno>
+#include <system_error>
 #include <sstream>
 
 namespace fs = std::filesystem;
@@ -42,6 +44,8 @@ bool checkFailure(int sys, string msg) {
 }
 
 void copyFiles(string from, string to) {
+    std::error_condition ok;
+    
     for(auto& p: fs::directory_iterator(from)) {
         auto fromFile = from + string("/") + p.path().filename().string();
         auto toFile = to + string("/") + p.path().filename().string();
@@ -55,7 +59,12 @@ void copyFiles(string from, string to) {
             copyFiles(fromFile, toFile);
         } else {
             cout << "Copying file: " << fromFile << " to " << toFile << endl;
-            fs::copy(fromFile, toFile);
+            std::error_code ec;
+            fs::copy(fromFile, toFile, ec);
+
+            if (ec != ok) {
+                cout << "\tWARNING: Failure: " << ec.message() << endl;
+            }
         }
     }
 }
@@ -100,7 +109,7 @@ bool PackageInstaller::install(Package &pck) {
 
     cout << "Copying files: " << outPath << endl;
 
-    copyFiles(outPath, "/");
+    copyFiles(outPath, "");
 
     //std::filesystem::copy(outPath, "/", std::filesystem::copy_options::recursive | 
     //    std::filesystem::copy_options::overwrite_existing);
