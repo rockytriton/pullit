@@ -43,8 +43,8 @@ bool checkFailure(int sys, string msg) {
 
 void copyFiles(string from, string to) {
     for(auto& p: fs::directory_iterator(from)) {
-        auto fromFile = from + "/" + p.path().filename();
-        auto toFile = to + "/" + p.path().filename();
+        auto fromFile = from + string("/") + p.path().filename().string();
+        auto toFile = to + string("/") + p.path().filename().string();
 
         if (p.is_directory()) {
 
