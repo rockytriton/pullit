@@ -45,7 +45,7 @@ bool checkFailure(int sys, string msg) {
 
 void copyFiles(string from, string to) {
     std::error_condition ok;
-    
+
     for(auto& p: fs::directory_iterator(from)) {
         auto fromFile = from + string("/") + p.path().filename().string();
         auto toFile = to + string("/") + p.path().filename().string();
@@ -56,11 +56,15 @@ void copyFiles(string from, string to) {
                 cout << "IS_SYM_LINK_DIR: " << fromFile << endl;
             }
 
+            struct stat attributes_stat;
+            stat(fromFile.c_str(), &attributes_stat);
+            mkdir(toFile.c_str(), attributes_stat.st_mode);
+
             copyFiles(fromFile, toFile);
         } else {
             cout << "Copying file: " << fromFile << " to " << toFile << endl;
             std::error_code ec;
-            fs::copy(fromFile, toFile, ec);
+            fs::copy(fromFile, toFile, fs::copy_options::overwrite_existing, ec);
 
             if (ec != ok) {
                 cout << "\tWARNING: Failure: " << ec.message() << endl;
