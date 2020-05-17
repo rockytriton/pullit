@@ -13,7 +13,7 @@ namespace pullit {
 #define DB ((sqlite3 *)dbHandle)
 
 PackageDb::PackageDb() {
-    if (sqlite3_open("/src/pullinux-1.0.0/db/packages.db", (sqlite3 **)&dbHandle)) {
+    if (sqlite3_open("/var/lib/pullit/packages.db", (sqlite3 **)&dbHandle)) {
         cerr << "Failed to open db: " << sqlite3_errmsg(DB) << endl;
         sqlite3_close(DB);
         exit(0);

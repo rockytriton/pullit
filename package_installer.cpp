@@ -66,7 +66,7 @@ void copyFiles(string from, string to) {
             std::error_code ec;
             fs::copy(fromFile, toFile, fs::copy_options::overwrite_existing, ec);
 
-            if (ec != ok) {
+            if (ec) {
                 cout << "\tWARNING: Failure: " << ec.message() << endl;
             }
         }
